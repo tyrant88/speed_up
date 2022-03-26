@@ -186,4 +186,126 @@ class speed_up {
         return rex_config::get('speed_up', $key);
     }
 
+
+    public static function showCssVarsFromSettings()
+    {
+        $fragment = new rex_fragment();
+        // echo $fragment->parse('simple'.'/css-presets.php');
+        // Todo: Neu machen anhand YForm-Tabelle, Multidomain-Kompatibel machen
+        return true;
+    }
+
+    public static function setCss($key)
+    {
+        $package = rex_package::get('speed_up');
+        $files = array_filter(array_unique(array_merge($package->getProperty('css') ?? [], explode(',', $key))));
+        $package->setProperty('css', $files);
+
+        return;
+    }
+
+    public static function setFont($key)
+    {
+        $package = rex_package::get('speed_up');
+        $files = array_filter(array_unique(array_merge($package->getProperty('font') ?? [], explode(',', $key))));
+        $package->setProperty('font', $files);
+
+        return;
+    }
+
+    public static function setJs($key)
+    {
+        $package = rex_package::get('speed_up');
+        $files = array_filter(array_unique(array_merge($package->getProperty('js') ?? [], explode(',', $key))));
+        $package->setProperty('js', $files);
+
+        return;
+    }
+
+    public static function setEndHtml($key)
+    {
+        $package = rex_package::get('across');
+        $files = array_unique(array_merge($package->getProperty('html') ?? [], explode(',', $key)));
+        $package->setProperty('html', $files);
+
+        return;
+    }
+
+    private static function showRessources($files, $type)
+    {
+        if ($files) {
+            foreach ($files as $file) {
+                $path_custom = theme_path::assets().'/'.$file;
+                $path_project = rex_path::assets($file);
+                $frontend_path = '';
+                $backend_path = '';
+                $timestamp = '';
+
+                if (file_exists($path_custom)) {
+                    $timestamp = filemtime($path_custom);
+                    $backend_path = $path_custom;
+                    $frontend_path = '/theme/public/assets/'.$template.'/'.$type.'/'.$file;
+                } elseif (file_exists($path_across)) {
+                    $timestamp = filemtime($path_across);
+                    $backend_path = $path_across;
+                    $frontend_path = '/assets/addons/across/'.$template.'/'.$type.'/'.$file;
+                } else {
+                    $frontend_path = '';
+                    // rex_logger::logError(2, '"'.rex_path::assets('/----/'.$file).'" fehlt', 'template://REX_TEMPLATE_ID', 0);
+                    continue;
+                }
+                if ('css' == $type) {
+                    echo '<style data-src="'.$frontend_path.'?timestamp='.$timestamp.'">'.rex_file::get($backend_path).'</style>';
+                } elseif ('js' == $type) {
+                    echo '<script data-src="'.$frontend_path.'?timestamp='.$timestamp.'">'.rex_file::get($backend_path).'</script>';
+                } elseif ('html' == $type) {
+                    echo rex_file::get($backend_path);
+                }
+            }
+        }
+    }
+
+    public static function showCss()
+    {
+        $package = rex_package::get('speed_up');
+        self::showRessources($package->getProperty('css'), 'css');
+    }
+
+    public static function showJs()
+    {
+        $package = rex_package::get('speed_up');
+        self::showRessources($package->getProperty('js'), 'js');
+    }
+
+    public static function showEndHtml()
+    {
+        $package = rex_package::get('speed_up');
+        self::showRessources($package->getProperty('html'), 'html');
+    }
+
+    public static function getFragment($file, $values = null, $fragment = null)
+    {
+        if (null === $fragment) {
+            $fragment = new rex_fragment();
+        }
+        if ($values) {
+            foreach ($values as $key => $value) {
+                $fragment->setVar($key, $value, false);
+            }
+        }
+
+        return $fragment->parse($file);
+    }
+
+    public static function showFragment($file, $values = null)
+    {
+        if (isset($values['slice_id']) && isset($values['article_id'])) {
+            echo self::getFragment('atom.slice-edit.php', $values);
+        }
+        echo self::getFragment($file, $values);
+    }
+
 }
+
+
+
